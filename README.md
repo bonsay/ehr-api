@@ -85,6 +85,39 @@ separately. Hibernate `ddl-auto: update` creates/updates the schema.
 | Consent | `GET/POST /api/patients/{id}/consents`, `POST /api/patients/{id}/consents/{cid}/revoke` |
 | Sharing | `GET /api/sharing/patients/{id}/record?requestingInstitutionId=N` |
 
+## FHIR R4 API
+
+The web client (and any third-party system) communicates with the backend using
+**FHIR R4** for all patient and clinical data. The `com.ehrapi.fhir` package maps
+each domain entity to its canonical FHIR resource and exposes a standards-based
+RESTful FHIR interface (`Content-Type: application/fhir+json`). The `/api`
+endpoints above remain for platform administration (module catalog, consent
+admin).
+
+| Domain | FHIR resource | Endpoints |
+|--------|---------------|-----------|
+| Patient | `Patient` | `GET /fhir/Patient[?name=&institution=]`, `GET /fhir/Patient/{id}`, `POST /fhir/Patient` |
+| Institution | `Organization` | `GET /fhir/Organization`, `GET /fhir/Organization/{id}` |
+| Problem | `Condition` | `GET /fhir/Condition?patient={id}`, `POST /fhir/Condition`, `DELETE /fhir/Condition/{id}` |
+| Medication | `MedicationRequest` | `GET /fhir/MedicationRequest?patient={id}`, `POST`, `DELETE /fhir/MedicationRequest/{id}` |
+| Allergy | `AllergyIntolerance` | `GET /fhir/AllergyIntolerance?patient={id}`, `POST`, `DELETE /fhir/AllergyIntolerance/{id}` |
+| Vitals | `Observation` (vital-signs) | `GET /fhir/Observation?patient={id}`, `POST`, `DELETE /fhir/Observation/{id}` |
+| Encounter | `Encounter` | `GET /fhir/Encounter?patient={id}`, `POST`, `DELETE /fhir/Encounter/{id}` |
+| Consent | `Consent` | `GET /fhir/Consent?patient={id}` |
+| — | `CapabilityStatement` | `GET /fhir/metadata` |
+
+Searches return a FHIR `Bundle` of type `searchset`. **Cross-institution sharing
+uses the standard `$everything` operation**, consent-enforced:
+
+```
+GET /fhir/Patient/{id}/$everything?requestingInstitution=N
+```
+
+It returns a `Bundle` containing the `Patient` plus the consented resources;
+modules the patient did **not** consent to share are reported as an
+informational `OperationOutcome` entry (`code: suppressed`). No active consent →
+`403`.
+
 ## Package layout
 
 ```
@@ -95,6 +128,7 @@ com.ehrapi
 ├── dto           request/response payloads
 ├── entity        JPA entities (plain Long FK columns, no lazy relations)
 ├── exception     ResourceNotFound / ConsentDenied + handler
+├── fhir          FHIR R4 layer: Fhir (helpers), FhirMapper, FhirController
 ├── repository    Spring Data JPA repositories
 └── service       business logic incl. ModuleService, ConsentService, SharingService
 ```
