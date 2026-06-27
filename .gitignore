@@ -1,0 +1,37 @@
+# Build output
+/build/
+/out/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Maven (legacy)
+/target/
+
+# IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.project
+.classpath
+.settings/
+.springBeans
+.sts4-cache
+nbproject/
+.apt_generated/
+
+# Logs / runtime
+*.log
+run.log
+grun.log
+
+# OS
+.DS_Store
+Thumbs.db
