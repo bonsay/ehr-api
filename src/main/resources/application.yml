@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: ehr-api
+
+  # Default datasource targets the shared Oracle instance (same host/config as
+  # content-retrieval-api). For local development without Oracle, run with the
+  # "h2" profile:  mvn spring-boot:run -Dspring-boot.run.profiles=h2
+  datasource:
+    url: jdbc:oracle:thin:@therapyapp.internal:1521:XE
+    driver-class-name: oracle.jdbc.OracleDriver
+    username: SYSTEM
+    password: Ves$4per
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.OracleDialect
+        format_sql: true
+        jdbc:
+          lob:
+            non_contextual_creation: true
+    defer-datasource-initialization: true
+
+  sql:
+    init:
+      mode: embedded
+      data-locations: classpath:data.sql
+
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+logging:
+  level:
+    com.ehrapi: DEBUG
+    org.springframework.web: DEBUG
+    org.hibernate.SQL: DEBUG
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+---
+# Local development profile backed by in-memory H2.
+spring:
+  config:
+    activate:
+      on-profile: h2
+  datasource:
+    url: jdbc:h2:mem:ehrdb;DB_CLOSE_DELAY=-1;MODE=Oracle
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  sql:
+    init:
+      mode: always
