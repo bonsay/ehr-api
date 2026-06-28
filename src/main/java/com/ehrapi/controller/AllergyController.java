@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,18 +31,21 @@ public class AllergyController {
 
     @PostMapping("/patients/{patientId}/allergies")
     @Operation(summary = "Add an allergy")
+    @PreAuthorize("hasAuthority('ALLERGIES:WRITE')")
     public ResponseEntity<Allergy> create(@PathVariable Long patientId, @Valid @RequestBody Allergy allergy) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(patientId, allergy));
     }
 
     @PutMapping("/allergies/{id}")
     @Operation(summary = "Update an allergy")
+    @PreAuthorize("hasAuthority('ALLERGIES:WRITE')")
     public Allergy update(@PathVariable Long id, @Valid @RequestBody Allergy allergy) {
         return service.update(id, allergy);
     }
 
     @DeleteMapping("/allergies/{id}")
     @Operation(summary = "Delete an allergy")
+    @PreAuthorize("hasAuthority('ALLERGIES:WRITE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

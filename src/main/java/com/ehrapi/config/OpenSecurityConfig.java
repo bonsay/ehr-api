@@ -12,14 +12,15 @@ import org.springframework.web.cors.CorsConfigurationSource;
 
 /**
  * Open configuration for LOCAL DEVELOPMENT ONLY. Active when
- * {@code ehr.security.enabled=false} (set by the {@code h2} profile). All
- * endpoints are permitted so the app runs without an identity provider.
+ * {@code ehr.security.mode=open}. All endpoints are permitted so the app runs
+ * without any authentication. Method security is NOT enabled in this mode, so
+ * {@code @PreAuthorize} annotations are inert and every action is allowed.
  *
- * <p>Never enable this in a higher environment.
+ * <p>Never use this in a higher environment.
  */
 @Configuration
 @EnableWebSecurity
-@ConditionalOnProperty(name = "ehr.security.enabled", havingValue = "false")
+@ConditionalOnProperty(name = "ehr.security.mode", havingValue = "open")
 public class OpenSecurityConfig {
 
     @Bean

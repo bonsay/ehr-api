@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -30,18 +31,21 @@ public class VitalSignController {
 
     @PostMapping("/patients/{patientId}/vitals")
     @Operation(summary = "Record vital signs")
+    @PreAuthorize("hasAuthority('VITALS:WRITE')")
     public ResponseEntity<VitalSign> create(@PathVariable Long patientId, @Valid @RequestBody VitalSign vital) {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(patientId, vital));
     }
 
     @PutMapping("/vitals/{id}")
     @Operation(summary = "Update vital signs")
+    @PreAuthorize("hasAuthority('VITALS:WRITE')")
     public VitalSign update(@PathVariable Long id, @Valid @RequestBody VitalSign vital) {
         return service.update(id, vital);
     }
 
     @DeleteMapping("/vitals/{id}")
     @Operation(summary = "Delete vital signs")
+    @PreAuthorize("hasAuthority('VITALS:WRITE')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();

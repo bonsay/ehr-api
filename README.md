@@ -82,6 +82,9 @@ restarts.
 | Vitals | `GET/POST /api/patients/{id}/vitals`, `PUT/DELETE /api/vitals/{id}` |
 | Consent | `GET/POST /api/patients/{id}/consents`, `POST /api/patients/{id}/consents/{cid}/revoke` |
 | Sharing | `GET /api/sharing/patients/{id}/record?requestingInstitutionId=N` |
+| Auth | `POST /api/auth/login` (local mode), `GET /api/auth/me` |
+| Admin · Roles | `GET /api/admin/roles`, `GET /api/admin/roles/permission-catalog`, `PUT /api/admin/roles/{code}/permissions` (`ADMIN:ROLES`) |
+| Admin · Users | `GET/POST /api/admin/users`, `PUT/DELETE /api/admin/users/{id}` (`ADMIN:USERS`) |
 
 ## FHIR R4 API
 
@@ -118,24 +121,77 @@ informational `OperationOutcome` entry (`code: suppressed`). No active consent �
 
 ## Authentication & authorization
 
-The API is an **OAuth2/OIDC resource server**. In higher environments every
-endpoint requires a valid **JWT access token**, validated against the IdP's JWKS.
-
-Controlled by `ehr.security.enabled`:
+Authentication is a **JWT bearer** model with **role-based authorization**
+enforced by Spring method security. The mode is selected by
+`ehr.security.mode`:
 
 | Mode | When | Behaviour |
 |------|------|-----------|
-| Secured (default) | `ehr.security.enabled=true` | JWT required; small public allow-list (`/fhir/metadata`, `/actuator/health`, API docs) |
-| Open (dev) | `ehr.security.enabled=false` (set by the `h2` profile) | All endpoints open — local dev only |
+| `oidc` (default) | higher environments | OAuth2/OIDC resource server — JWTs validated against the external IdP's JWKS. Roles come from the token. |
+| `local` | dev / demo (set by the `h2` profile) | The API authenticates users itself (`POST /api/auth/login`) and issues its own HS256 JWTs. Self-contained — no external IdP. |
+| `open` | pure local dev | No authentication; method security is off, so every action is permitted. |
 
-Configuration (env vars):
+A small public allow-list (`/fhir/metadata`, `/actuator/health`, API docs, and —
+in local mode — `/api/auth/login`) stays open in the secured modes.
+
+### Roles, permissions and the access model
+
+Authorization is driven by **permissions** of the form `MODULE:ACTION`
+(`VITALS:WRITE`, `MEDICATIONS:WRITE`, …) plus administrative permissions
+(`ADMIN:USERS`, `ADMIN:ROLES`, `ADMIN:MODULES`). **Reads** require only an
+authenticated user; **writes** require the matching `MODULE:WRITE` permission;
+the admin surface requires the matching `ADMIN:*` permission.
+
+Permissions are bundled into **roles**, stored in the database and editable at
+runtime by an administrator (`PUT /api/admin/roles/{code}/permissions`). The
+built-in roles seed as:
+
+| Role | Highlights |
+|------|------------|
+| `ADMINISTRATOR` | `ADMIN:USERS`, `ADMIN:ROLES`, `ADMIN:MODULES` + read across all modules |
+| `PHYSICIAN` | read + write on every clinical module, **including prescribing** (`MEDICATIONS:WRITE`) |
+| `NURSE` | read all; write vitals, encounters, allergies — **cannot prescribe** medications |
+| `RECEPTIONIST` | register/update patient demographics; read encounters |
+
+This is the worked example from the brief: a **nurse can enter vitals but not
+prescribe medication**, while a **physician can** — enforced server-side by
+`@PreAuthorize` on the FHIR and `/api` write endpoints, and mirrored in the web
+UI. An administrator manages all of this through `/api/admin/*`.
+
+### Demo users (local mode)
+
+With the `h2` profile (`ehr.security.seed-demo-users=true`) these accounts are
+seeded (password = `<username>123`):
+
+| Username | Password | Role | Institution |
+|----------|----------|------|-------------|
+| `admin` | `admin123` | ADMINISTRATOR | General Hospital |
+| `physician` | `physician123` | PHYSICIAN | General Hospital |
+| `nurse` | `nurse123` | NURSE | General Hospital |
+| `reception` | `reception123` | RECEPTIONIST | Downtown Clinic |
 
 ```bash
-EHR_SECURITY_ENABLED=true
-OAUTH_ISSUER_URI=https://<your-idp>/realms/ehr   # required when secured
+# Log in and call a protected endpoint
+TOKEN=$(curl -s localhost:8081/api/auth/login -H 'Content-Type: application/json' \
+  -d '{"username":"physician","password":"physician123"}' | jq -r .accessToken)
+curl -s localhost:8081/api/auth/me -H "Authorization: Bearer $TOKEN"
+```
+
+### Configuration (env vars)
+
+```bash
+EHR_SECURITY_MODE=oidc                           # oidc | local | open
+OAUTH_ISSUER_URI=https://<your-idp>/realms/ehr   # required for oidc mode
 EHR_INSTITUTION_CLAIM=institution_id             # JWT claim carrying the institution id
+EHR_ROLES_CLAIM=roles                            # JWT claim carrying role codes (oidc)
+EHR_LOCAL_JWT_SECRET=<32+ byte secret>           # HS256 signing key for local mode
+EHR_SEED_DEMO_USERS=false                        # seed the demo accounts above
 EHR_CORS_ORIGINS=https://ehr.example.com         # lock to the web app origin(s)
 ```
+
+In **oidc** mode the token's `roles` claim is expanded into permissions using the
+same admin-editable role definitions, so the role model applies identically
+whether a user signs in locally or through the external IdP.
 
 **Identity → institution (the trust anchor).** Cross-institution sharing is
 gated on the institution from the **verified token claim**, never a request
@@ -165,13 +221,14 @@ configured claim name:
 ```
 com.ehrapi
 ├── common        ModuleCodes
-├── config        Cors / ResourceServer / Open security configs, OpenApiConfig
-├── controller    REST controllers (one per area)
-├── dto           request/response payloads
-├── entity        JPA entities (plain Long FK columns, no lazy relations)
-├── exception     ResourceNotFound / ConsentDenied + handler
-├── fhir          FHIR R4 layer: Fhir (helpers), FhirMapper, FhirController
-├── repository    Spring Data JPA repositories
-├── security      CurrentInstitution (JWT claim -> institution id)
-└── service       business logic incl. ModuleService, ConsentService, SharingService
+├── config        Cors / Local / ResourceServer (oidc) / Open security configs, PasswordConfig, OpenApiConfig
+├── controller    REST controllers incl. AuthController, RoleAdminController, UserAdminController
+├── dto           request/response payloads (login, current user, roles, users…)
+├── entity        JPA entities incl. Role, AppUser (plain Long FK columns)
+├── exception     ResourceNotFound / ConsentDenied / auth + access-denied handlers
+├── fhir          FHIR R4 layer: Fhir (helpers), FhirMapper, FhirController (@PreAuthorize on writes)
+├── repository    Spring Data JPA repositories incl. RoleRepository, AppUserRepository
+├── security      Permissions catalog, CurrentInstitution, CurrentUser, RoleAuthorityService,
+│                  EhrAuthoritiesConverter, LocalTokenService, SecuritySeeder
+└── service       business logic incl. LoginService, RoleAdminService, UserAdminService
 ```

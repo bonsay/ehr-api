@@ -6,6 +6,7 @@ import com.ehrapi.entity.EhrModule;
 import com.ehrapi.service.ModuleService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,6 +40,7 @@ public class ModuleController {
 
     @PutMapping("/institutions/{institutionId}/modules/{moduleCode}")
     @Operation(summary = "Enable or disable a module for an institution")
+    @PreAuthorize("hasAuthority('ADMIN:MODULES')")
     public ModuleStatusDto toggle(@PathVariable Long institutionId,
                                   @PathVariable String moduleCode,
                                   @RequestBody ToggleModuleRequest request) {
