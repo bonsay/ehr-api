@@ -2,6 +2,7 @@ package com.ehrapi.config;
 
 import com.ehrapi.security.EhrAuthoritiesConverter;
 import com.ehrapi.security.RoleAuthorityService;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -12,39 +13,67 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
 /**
- * {@code oidc} security mode (the default for higher environments). Every
- * endpoint requires a valid OAuth2/OIDC JWT access token, validated against the
- * configured issuer's JWKS ({@code spring.security.oauth2.resourceserver.jwt.issuer-uri}).
- * A small public allow-list (health, FHIR CapabilityStatement, API docs) stays
- * open so service discovery and probes work without a token.
+ * {@code local} security mode: the API is its own identity provider. It issues
+ * HS256 JWTs from {@code POST /api/auth/login} (see {@code LocalTokenService})
+ * and validates them as a resource server using the same shared secret. This
+ * makes the full authentication + role-based authorization story runnable with
+ * no external IdP — ideal for development and demos.
  *
- * <p>Authorities are derived from the token: a {@code roles} claim (configurable)
- * is expanded into permissions via the admin-editable role definitions, so the
- * same role-based authorization enforced by {@code @PreAuthorize} applies whether
- * the user signs in locally or through the external IdP.
+ * <p>Method security is enabled here so {@code @PreAuthorize} on write endpoints
+ * is enforced. The login endpoint stays public; everything else requires a valid
+ * token.
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@ConditionalOnProperty(name = "ehr.security.mode", havingValue = "oidc", matchIfMissing = true)
-public class ResourceServerSecurityConfig {
+@ConditionalOnProperty(name = "ehr.security.mode", havingValue = "local")
+public class LocalSecurityConfig {
+
+    private final SecretKey secretKey;
+
+    public LocalSecurityConfig(@Value("${ehr.security.local.jwt-secret:dev-local-secret-change-me-please-32b+}") String secret) {
+        // HS256 requires a >= 256-bit key; pad short dev secrets deterministically.
+        byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (bytes.length < 32) {
+            bytes = Arrays.copyOf(bytes, 32);
+        }
+        this.secretKey = new SecretKeySpec(bytes, "HmacSHA256");
+    }
+
+    @Bean
+    public JwtEncoder jwtEncoder() {
+        return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
+    }
+
+    @Bean
+    public JwtDecoder jwtDecoder() {
+        return NimbusJwtDecoder.withSecretKey(secretKey).macAlgorithm(MacAlgorithm.HS256).build();
+    }
 
     @Bean
     public SecurityFilterChain filterChain(
             HttpSecurity http,
             @Qualifier("corsConfigurationSource") CorsConfigurationSource cors,
-            RoleAuthorityService roleAuthorityService,
-            @Value("${ehr.auth.roles-claim:roles}") String rolesClaim,
-            @Value("${ehr.auth.authorities-claim:authorities}") String authoritiesClaim) throws Exception {
+            RoleAuthorityService roleAuthorityService) throws Exception {
 
         JwtAuthenticationConverter jwtConverter = new JwtAuthenticationConverter();
         jwtConverter.setJwtGrantedAuthoritiesConverter(
-                new EhrAuthoritiesConverter(authoritiesClaim, rolesClaim, roleAuthorityService));
+                new EhrAuthoritiesConverter("authorities", "roles", roleAuthorityService));
 
         http
             .cors(c -> c.configurationSource(cors))
@@ -53,6 +82,7 @@ public class ResourceServerSecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
+                        "/api/auth/login",
                         "/fhir/metadata",
                         "/actuator/health", "/actuator/health/**", "/actuator/info",
                         "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()

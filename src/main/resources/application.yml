@@ -58,13 +58,31 @@ springdoc:
 # EHR platform security settings.
 ehr:
   security:
-    # When true (default / higher environments) every endpoint requires a valid
-    # JWT. Set false only for local development against an open backend.
-    enabled: ${EHR_SECURITY_ENABLED:true}
+    # Authentication / authorization mode:
+    #   oidc  - resource server validating JWTs from an external IdP (default,
+    #           higher environments). Roles come from the token.
+    #   local - the API authenticates users itself (username/password) and issues
+    #           its own JWTs. Self-contained; ideal for dev/demo. See below.
+    #   open  - no authentication at all. LOCAL DEV ONLY.
+    mode: ${EHR_SECURITY_MODE:oidc}
+    # Seed demo users (admin/physician/nurse/reception) on startup. Default off;
+    # the h2 dev profile turns this on so the role model is demonstrable.
+    seed-demo-users: ${EHR_SEED_DEMO_USERS:false}
+    local:
+      # HS256 signing secret for local-mode tokens. MUST be overridden (>= 32
+      # bytes) in any shared environment.
+      jwt-secret: ${EHR_LOCAL_JWT_SECRET:dev-local-secret-change-me-please-32b+}
+      # Access-token lifetime in seconds (default 8h).
+      token-ttl-seconds: ${EHR_LOCAL_TOKEN_TTL:28800}
   auth:
     # JWT claim that carries the caller's institution id. Configure to match the
     # claim your IdP issues (e.g. a Keycloak mapper / Entra app role claim).
     institution-claim: ${EHR_INSTITUTION_CLAIM:institution_id}
+    # JWT claim carrying role codes (oidc mode); expanded to permissions via the
+    # admin-editable role definitions.
+    roles-claim: ${EHR_ROLES_CLAIM:roles}
+    # Optional JWT claim carrying permission strings directly (oidc mode).
+    authorities-claim: ${EHR_AUTHORITIES_CLAIM:authorities}
   cors:
     # Comma-separated allowed origins. Lock to your web app origin(s) in prod.
     allowed-origins: ${EHR_CORS_ORIGINS:http://localhost:4200}
@@ -97,6 +115,10 @@ spring:
 
 ehr:
   security:
-    enabled: false
+    # Local mode: the API authenticates users and issues its own JWTs, so the
+    # full role-based authorization story is demonstrable without an external
+    # IdP. Set EHR_SECURITY_MODE=open to disable auth entirely.
+    mode: ${EHR_SECURITY_MODE:local}
+    seed-demo-users: true
   cors:
     allowed-origins: "*"

@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Verifies the OAuth2 resource-server behaviour and that cross-institution
  * sharing is driven by the JWT's institution claim (not a request parameter).
  *
- * Runs the secured config ({@code ehr.security.enabled=true}) over the H2 seed
+ * Runs the secured OIDC config ({@code ehr.security.mode=oidc}) over the H2 seed
  * data. A mocked {@link JwtDecoder} satisfies the resource server without
  * needing a real identity provider; the {@code jwt()} post-processor injects a
  * pre-authenticated token with the desired claim.
@@ -28,7 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("h2")
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-        "ehr.security.enabled=true",
+        "ehr.security.mode=oidc",
+        "ehr.security.seed-demo-users=false",
         "ehr.auth.institution-claim=institution_id"
 })
 class FhirSecurityTest {

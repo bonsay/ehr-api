@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -112,6 +113,7 @@ public class FhirController {
     }
 
     @PostMapping(value = "/Patient", produces = CONTENT_TYPE)
+    @PreAuthorize("hasAuthority('DEMOGRAPHICS:WRITE')")
     public ResponseEntity<Map<String, Object>> createPatient(@RequestBody Map<String, Object> body) {
         var created = patientService.create(mapper.fromPatient(body));
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toPatient(created));
@@ -151,6 +153,7 @@ public class FhirController {
     }
 
     @PostMapping(value = "/Condition", produces = CONTENT_TYPE)
+    @PreAuthorize("hasAuthority('PROBLEMS:WRITE')")
     public ResponseEntity<Map<String, Object>> createCondition(@RequestBody Map<String, Object> body) {
         var problem = mapper.fromCondition(body);
         var created = problemService.create(problem.getPatientId(), problem);
@@ -158,6 +161,7 @@ public class FhirController {
     }
 
     @DeleteMapping("/Condition/{id}")
+    @PreAuthorize("hasAuthority('PROBLEMS:WRITE')")
     public ResponseEntity<Void> deleteCondition(@PathVariable Long id) {
         problemService.delete(id);
         return ResponseEntity.noContent().build();
@@ -172,6 +176,7 @@ public class FhirController {
     }
 
     @PostMapping(value = "/MedicationRequest", produces = CONTENT_TYPE)
+    @PreAuthorize("hasAuthority('MEDICATIONS:WRITE')")
     public ResponseEntity<Map<String, Object>> createMedication(@RequestBody Map<String, Object> body) {
         var medication = mapper.fromMedicationRequest(body);
         var created = medicationService.create(medication.getPatientId(), medication);
@@ -179,6 +184,7 @@ public class FhirController {
     }
 
     @DeleteMapping("/MedicationRequest/{id}")
+    @PreAuthorize("hasAuthority('MEDICATIONS:WRITE')")
     public ResponseEntity<Void> deleteMedication(@PathVariable Long id) {
         medicationService.delete(id);
         return ResponseEntity.noContent().build();
@@ -193,6 +199,7 @@ public class FhirController {
     }
 
     @PostMapping(value = "/AllergyIntolerance", produces = CONTENT_TYPE)
+    @PreAuthorize("hasAuthority('ALLERGIES:WRITE')")
     public ResponseEntity<Map<String, Object>> createAllergy(@RequestBody Map<String, Object> body) {
         var allergy = mapper.fromAllergyIntolerance(body);
         var created = allergyService.create(allergy.getPatientId(), allergy);
@@ -200,6 +207,7 @@ public class FhirController {
     }
 
     @DeleteMapping("/AllergyIntolerance/{id}")
+    @PreAuthorize("hasAuthority('ALLERGIES:WRITE')")
     public ResponseEntity<Void> deleteAllergy(@PathVariable Long id) {
         allergyService.delete(id);
         return ResponseEntity.noContent().build();
@@ -214,6 +222,7 @@ public class FhirController {
     }
 
     @PostMapping(value = "/Observation", produces = CONTENT_TYPE)
+    @PreAuthorize("hasAuthority('VITALS:WRITE')")
     public ResponseEntity<Map<String, Object>> createObservation(@RequestBody Map<String, Object> body) {
         var vital = mapper.fromObservation(body);
         var created = vitalSignService.create(vital.getPatientId(), vital);
@@ -221,6 +230,7 @@ public class FhirController {
     }
 
     @DeleteMapping("/Observation/{id}")
+    @PreAuthorize("hasAuthority('VITALS:WRITE')")
     public ResponseEntity<Void> deleteObservation(@PathVariable Long id) {
         vitalSignService.delete(id);
         return ResponseEntity.noContent().build();
@@ -235,6 +245,7 @@ public class FhirController {
     }
 
     @PostMapping(value = "/Encounter", produces = CONTENT_TYPE)
+    @PreAuthorize("hasAuthority('ENCOUNTERS:WRITE')")
     public ResponseEntity<Map<String, Object>> createEncounter(@RequestBody Map<String, Object> body) {
         var encounter = mapper.fromEncounter(body);
         var created = encounterService.create(encounter.getPatientId(), encounter);
@@ -242,6 +253,7 @@ public class FhirController {
     }
 
     @DeleteMapping("/Encounter/{id}")
+    @PreAuthorize("hasAuthority('ENCOUNTERS:WRITE')")
     public ResponseEntity<Void> deleteEncounter(@PathVariable Long id) {
         encounterService.delete(id);
         return ResponseEntity.noContent().build();
