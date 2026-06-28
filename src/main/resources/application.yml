@@ -29,6 +29,15 @@ spring:
       mode: embedded
       data-locations: classpath:data.sql
 
+  # OAuth2 / OIDC resource server. Point this at your IdP (Keycloak, Entra ID,
+  # Auth0, Cognito, ...). The server validates inbound JWT access tokens against
+  # the issuer's JWKS. Required whenever ehr.security.enabled is true.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OAUTH_ISSUER_URI:}
+
 server:
   port: 8081
   servlet:
@@ -46,8 +55,23 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+# EHR platform security settings.
+ehr:
+  security:
+    # When true (default / higher environments) every endpoint requires a valid
+    # JWT. Set false only for local development against an open backend.
+    enabled: ${EHR_SECURITY_ENABLED:true}
+  auth:
+    # JWT claim that carries the caller's institution id. Configure to match the
+    # claim your IdP issues (e.g. a Keycloak mapper / Entra app role claim).
+    institution-claim: ${EHR_INSTITUTION_CLAIM:institution_id}
+  cors:
+    # Comma-separated allowed origins. Lock to your web app origin(s) in prod.
+    allowed-origins: ${EHR_CORS_ORIGINS:http://localhost:4200}
+
 ---
-# Local development profile backed by in-memory H2.
+# Local development profile backed by in-memory H2. Security is OPEN here so the
+# app runs without an IdP; never use this profile in a higher environment.
 spring:
   config:
     activate:
@@ -70,3 +94,9 @@ spring:
   sql:
     init:
       mode: always
+
+ehr:
+  security:
+    enabled: false
+  cors:
+    allowed-origins: "*"

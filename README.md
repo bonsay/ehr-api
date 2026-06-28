@@ -118,23 +118,62 @@ modules the patient did **not** consent to share are reported as an
 informational `OperationOutcome` entry (`code: suppressed`). No active consent →
 `403`.
 
+## Authentication & authorization
+
+The API is an **OAuth2/OIDC resource server**. In higher environments every
+endpoint requires a valid **JWT access token**, validated against the IdP's JWKS.
+
+Controlled by `ehr.security.enabled`:
+
+| Mode | When | Behaviour |
+|------|------|-----------|
+| Secured (default) | `ehr.security.enabled=true` | JWT required; small public allow-list (`/fhir/metadata`, `/actuator/health`, API docs) |
+| Open (dev) | `ehr.security.enabled=false` (set by the `h2` profile) | All endpoints open — local dev only |
+
+Configuration (env vars):
+
+```bash
+EHR_SECURITY_ENABLED=true
+OAUTH_ISSUER_URI=https://<your-idp>/realms/ehr   # required when secured
+EHR_INSTITUTION_CLAIM=institution_id             # JWT claim carrying the institution id
+EHR_CORS_ORIGINS=https://ehr.example.com         # lock to the web app origin(s)
+```
+
+**Identity → institution (the trust anchor).** Cross-institution sharing is
+gated on the institution from the **verified token claim**, never a request
+parameter. `CurrentInstitution` reads `ehr.auth.institution-claim`; the
+`$everything` / sharing endpoints ignore the `requestingInstitution` parameter
+when a token is present (the parameter is only a fallback in open/dev mode). A
+client therefore cannot spoof another institution (covered by `FhirSecurityTest`).
+
+### Configuring an identity provider
+
+Any standards-compliant OIDC provider works — set `OAUTH_ISSUER_URI` to its
+issuer and add a mapper/claim that emits the user's institution id under the
+configured claim name:
+
+- **Keycloak** — realm `ehr`, issuer `https://host/realms/ehr`; add a user
+  attribute `institution_id` + a "User Attribute" protocol mapper (token claim
+  `institution_id`).
+- **Microsoft Entra ID** — issuer `https://login.microsoftonline.com/<tenant>/v2.0`;
+  emit the institution via an app-role or an optional/extension claim.
+- **Auth0** — issuer `https://<tenant>.auth0.com/`; add `institution_id` via a
+  custom claim (Action/Rule).
+- **AWS Cognito** — issuer `https://cognito-idp.<region>.amazonaws.com/<poolId>`;
+  add a custom attribute surfaced as a token claim.
+
 ## Package layout
 
 ```
 com.ehrapi
 ├── common        ModuleCodes
-├── config        SecurityConfig, OpenApiConfig
+├── config        Cors / ResourceServer / Open security configs, OpenApiConfig
 ├── controller    REST controllers (one per area)
 ├── dto           request/response payloads
 ├── entity        JPA entities (plain Long FK columns, no lazy relations)
 ├── exception     ResourceNotFound / ConsentDenied + handler
 ├── fhir          FHIR R4 layer: Fhir (helpers), FhirMapper, FhirController
 ├── repository    Spring Data JPA repositories
+├── security      CurrentInstitution (JWT claim -> institution id)
 └── service       business logic incl. ModuleService, ConsentService, SharingService
 ```
-
-> Security note: like the reference project, endpoints are currently open
-> (`permitAll`) to keep the demo simple. The "acting as" institution is supplied
-> by the client. A production deployment must add authentication and derive the
-> requesting institution from the authenticated principal rather than trusting a
-> request parameter.

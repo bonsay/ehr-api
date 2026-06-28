@@ -1,6 +1,7 @@
 package com.ehrapi.fhir;
 
 import com.ehrapi.dto.SharedPatientRecordDto;
+import com.ehrapi.security.CurrentInstitution;
 import com.ehrapi.service.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -49,12 +50,14 @@ public class FhirController {
     private final VitalSignService vitalSignService;
     private final ConsentService consentService;
     private final SharingService sharingService;
+    private final CurrentInstitution currentInstitution;
 
     public FhirController(FhirMapper mapper, PatientService patientService,
                           InstitutionService institutionService, EncounterService encounterService,
                           ProblemService problemService, MedicationService medicationService,
                           AllergyService allergyService, VitalSignService vitalSignService,
-                          ConsentService consentService, SharingService sharingService) {
+                          ConsentService consentService, SharingService sharingService,
+                          CurrentInstitution currentInstitution) {
         this.mapper = mapper;
         this.patientService = patientService;
         this.institutionService = institutionService;
@@ -65,6 +68,7 @@ public class FhirController {
         this.vitalSignService = vitalSignService;
         this.consentService = consentService;
         this.sharingService = sharingService;
+        this.currentInstitution = currentInstitution;
     }
 
     // ---- Capability statement -------------------------------------------------
@@ -116,10 +120,13 @@ public class FhirController {
     @GetMapping(value = "/Patient/{id}/$everything", produces = CONTENT_TYPE)
     @Operation(summary = "Consent-gated patient record Bundle",
             description = "Returns the patient's record as a FHIR Bundle, filtered by the patient's "
-                    + "active consent for the requesting institution. 403 when no consent exists.")
+                    + "active consent for the requesting institution. The requesting institution is "
+                    + "taken from the authenticated JWT; the requestingInstitution parameter is only "
+                    + "used in open/dev mode. 403 when no consent exists.")
     public Map<String, Object> everything(@PathVariable Long id,
-                                          @RequestParam Long requestingInstitution) {
-        SharedPatientRecordDto record = sharingService.getSharedRecord(id, requestingInstitution);
+                                          @RequestParam(required = false) Long requestingInstitution) {
+        Long institutionId = currentInstitution.resolveOrFallback(requestingInstitution);
+        SharedPatientRecordDto record = sharingService.getSharedRecord(id, institutionId);
         return mapper.everythingBundle(record);
     }
 
