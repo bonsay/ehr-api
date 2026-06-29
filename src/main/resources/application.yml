@@ -94,11 +94,15 @@ ehr:
     #            webhook. Requires the keys below and per-module price ids.
     mode: ${EHR_BILLING_MODE:local}
     # Where Stripe redirects the buyer after checkout (back to the marketplace).
-    success-url: ${EHR_BILLING_SUCCESS_URL:http://localhost:4200/marketplace}
-    cancel-url: ${EHR_BILLING_CANCEL_URL:http://localhost:4200/marketplace}
+    success-url: ${EHR_BILLING_SUCCESS_URL:http://localhost:4200/modules}
+    cancel-url: ${EHR_BILLING_CANCEL_URL:http://localhost:4200/modules}
     stripe:
       secret-key: ${STRIPE_SECRET_KEY:}
       webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  onboarding:
+    # Allow public self-service institution sign-up (free tier). Disable in
+    # environments where institutions are provisioned only by an operator.
+    enabled: ${EHR_ONBOARDING_ENABLED:true}
 
 ---
 # Local development profile backed by in-memory H2. Security is OPEN here so the
