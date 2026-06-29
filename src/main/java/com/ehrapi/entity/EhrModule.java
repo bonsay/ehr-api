@@ -37,6 +37,23 @@ public class EhrModule {
     @Column(nullable = false)
     private boolean active = true;
 
+    /**
+     * Commercial tier. FREE modules are available to every institution; PRO and
+     * ENTERPRISE modules require an active entitlement before they can be enabled.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ModuleTier tier = ModuleTier.FREE;
+
+    /** How the module is charged for. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "price_model", nullable = false, length = 20)
+    private PriceModel priceModel = PriceModel.FREE;
+
+    /** List price in cents (e.g. 4900 = $49.00). Null/0 for FREE modules. */
+    @Column(name = "price_monthly_cents")
+    private Integer priceMonthlyCents;
+
     public EhrModule() {}
 
     public Long getId() { return id; }
@@ -59,4 +76,16 @@ public class EhrModule {
 
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
+
+    public ModuleTier getTier() { return tier; }
+    public void setTier(ModuleTier tier) { this.tier = tier; }
+
+    public PriceModel getPriceModel() { return priceModel; }
+    public void setPriceModel(PriceModel priceModel) { this.priceModel = priceModel; }
+
+    public Integer getPriceMonthlyCents() { return priceMonthlyCents; }
+    public void setPriceMonthlyCents(Integer priceMonthlyCents) { this.priceMonthlyCents = priceMonthlyCents; }
+
+    /** True for modules that require a paid entitlement (non-FREE tier). */
+    public boolean isPaid() { return tier != null && tier != ModuleTier.FREE; }
 }

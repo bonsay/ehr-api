@@ -25,6 +25,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, ex.getMessage());
     }
 
+    /** Paid module used/enabled without an active entitlement. */
+    @ExceptionHandler(ModuleNotEntitledException.class)
+    public ResponseEntity<Map<String, Object>> handleNotEntitled(ModuleNotEntitledException ex) {
+        return build(HttpStatus.PAYMENT_REQUIRED, ex.getMessage());
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleBadRequest(IllegalArgumentException ex) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
