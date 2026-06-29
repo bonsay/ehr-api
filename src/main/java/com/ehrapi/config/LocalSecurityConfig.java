@@ -83,6 +83,7 @@ public class LocalSecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
                         "/api/auth/login",
+                        "/api/onboarding/register",
                         "/api/billing/webhook",
                         "/fhir/metadata",
                         "/actuator/health", "/actuator/health/**", "/actuator/info",
