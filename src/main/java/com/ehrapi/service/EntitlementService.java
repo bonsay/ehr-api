@@ -86,6 +86,23 @@ public class EntitlementService {
         return grant(institutionId, moduleCode, EntitlementStatus.ACTIVE, "LOCAL_PURCHASE", null);
     }
 
+    /**
+     * Activate (or renew) an entitlement from a settled billing event. Used by
+     * asynchronous providers once payment is confirmed via webhook.
+     */
+    public ModuleEntitlement activate(Long institutionId, String moduleCode, String source,
+                                      LocalDateTime expiresAt) {
+        return grant(institutionId, moduleCode, EntitlementStatus.ACTIVE, source, expiresAt);
+    }
+
+    /** Mark an existing entitlement expired (e.g. subscription cancelled/lapsed). */
+    public void expire(Long institutionId, String moduleCode) {
+        entitlements.findByInstitutionIdAndModuleCode(institutionId, moduleCode).ifPresent(e -> {
+            e.setStatus(EntitlementStatus.EXPIRED);
+            entitlements.save(e);
+        });
+    }
+
     /** Upsert the institution's entitlement for a module. */
     public ModuleEntitlement grant(Long institutionId, String moduleCode, EntitlementStatus status,
                                    String source, LocalDateTime expiresAt) {

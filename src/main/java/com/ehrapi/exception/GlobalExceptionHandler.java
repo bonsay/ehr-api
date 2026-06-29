@@ -36,6 +36,16 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+    /**
+     * Server-side misconfiguration or a failed downstream call (e.g. billing not
+     * fully configured, or the payment provider rejected the request). Returns a
+     * clean message instead of leaking a stack trace.
+     */
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
+    }
+
     /** Failed login / bad or disabled credentials. */
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<Map<String, Object>> handleAuthentication(AuthenticationException ex) {
