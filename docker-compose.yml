@@ -1,0 +1,38 @@
+# One-command sandbox for the modular EHR.
+#
+#   docker compose up --build
+#   → web at http://localhost:8080   (api at http://localhost:8081)
+#
+# Runs the API on in-memory H2 in local security mode with demo users seeded
+# (admin/physician/nurse/reception, password "<username>123") and the web app
+# served by nginx, which proxies /api and /fhir to the API. Everything is
+# ephemeral — stop the stack and the data resets.
+#
+# NOTE: the web image is built from the sibling ../ehr-web checkout, so clone
+# both repos next to each other (as in EHR-SYSTEM.md).
+services:
+  api:
+    build: .
+    container_name: ehr-api
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: h2
+      EHR_SECURITY_MODE: local
+      EHR_SEED_DEMO_USERS: "true"
+      EHR_BILLING_MODE: local
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/8081' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 40s
+
+  web:
+    build: ../ehr-web
+    container_name: ehr-web
+    ports:
+      - "8080:80"
+    depends_on:
+      api:
+        condition: service_healthy
