@@ -1,5 +1,7 @@
 package com.ehrapi.controller;
 
+import com.ehrapi.billing.BillingProvider;
+import com.ehrapi.billing.CheckoutResult;
 import com.ehrapi.dto.EntitlementDto;
 import com.ehrapi.dto.ModuleStatusDto;
 import com.ehrapi.service.EntitlementService;
@@ -26,10 +28,13 @@ public class EntitlementController {
 
     private final EntitlementService entitlementService;
     private final ModuleService moduleService;
+    private final BillingProvider billingProvider;
 
-    public EntitlementController(EntitlementService entitlementService, ModuleService moduleService) {
+    public EntitlementController(EntitlementService entitlementService, ModuleService moduleService,
+                                 BillingProvider billingProvider) {
         this.entitlementService = entitlementService;
         this.moduleService = moduleService;
+        this.billingProvider = billingProvider;
     }
 
     @GetMapping("/institutions/{institutionId}/entitlements")
@@ -49,10 +54,11 @@ public class EntitlementController {
     }
 
     @PostMapping("/institutions/{institutionId}/modules/{moduleCode}/purchase")
-    @Operation(summary = "Purchase a paid module (Phase 1: direct local grant)")
+    @Operation(summary = "Purchase a paid module via the active billing provider")
     @PreAuthorize("hasAuthority('ADMIN:MODULES')")
-    public ModuleStatusDto purchase(@PathVariable Long institutionId, @PathVariable String moduleCode) {
-        entitlementService.purchase(institutionId, moduleCode);
-        return moduleService.getStatus(institutionId, moduleCode);
+    public CheckoutResult purchase(@PathVariable Long institutionId, @PathVariable String moduleCode) {
+        // The provider either grants immediately (local) or returns a hosted
+        // checkout URL for the client to redirect to (stripe -> webhook grant).
+        return billingProvider.createCheckout(institutionId, moduleService.getModule(moduleCode));
     }
 }

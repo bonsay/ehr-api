@@ -53,6 +53,7 @@ public class ResourceServerSecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
+                        "/api/billing/webhook",
                         "/fhir/metadata",
                         "/actuator/health", "/actuator/health/**", "/actuator/info",
                         "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
