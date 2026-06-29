@@ -1,6 +1,8 @@
 package com.ehrapi.controller;
 
+import com.ehrapi.common.ModuleCodes;
 import com.ehrapi.entity.Problem;
+import com.ehrapi.security.RequiresModule;
 import com.ehrapi.service.ProblemService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @Tag(name = "Problems", description = "Problem list / diagnoses (module: PROBLEMS)")
+@RequiresModule(ModuleCodes.PROBLEMS)
 public class ProblemController {
 
     private final ProblemService service;

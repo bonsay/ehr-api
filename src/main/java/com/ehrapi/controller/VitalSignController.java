@@ -1,6 +1,8 @@
 package com.ehrapi.controller;
 
+import com.ehrapi.common.ModuleCodes;
 import com.ehrapi.entity.VitalSign;
+import com.ehrapi.security.RequiresModule;
 import com.ehrapi.service.VitalSignService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -15,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api")
 @Tag(name = "Vitals", description = "Vital signs (module: VITALS)")
+@RequiresModule(ModuleCodes.VITALS)
 public class VitalSignController {
 
     private final VitalSignService service;
