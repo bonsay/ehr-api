@@ -72,6 +72,11 @@ public class ModuleService {
                 entitlementService.statusFor(institutionId, m.getCode()));
     }
 
+    /** The catalog module for a code, or 404 if unknown. */
+    public EhrModule getModule(String moduleCode) {
+        return requireModule(moduleCode);
+    }
+
     /** The module codes an institution currently has enabled. */
     public List<String> getEnabledModuleCodes(Long institutionId) {
         return institutionModuleRepository.findByInstitutionIdAndEnabledTrue(institutionId)
