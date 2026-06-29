@@ -86,6 +86,19 @@ ehr:
   cors:
     # Comma-separated allowed origins. Lock to your web app origin(s) in prod.
     allowed-origins: ${EHR_CORS_ORIGINS:http://localhost:4200}
+  billing:
+    # Billing provider for paid-module purchases:
+    #   local  - self-contained; "buy" grants the entitlement immediately. No
+    #            payment gateway. Default; ideal for dev/demo.
+    #   stripe - real Stripe Checkout; entitlements are granted on a signed
+    #            webhook. Requires the keys below and per-module price ids.
+    mode: ${EHR_BILLING_MODE:local}
+    # Where Stripe redirects the buyer after checkout (back to the marketplace).
+    success-url: ${EHR_BILLING_SUCCESS_URL:http://localhost:4200/marketplace}
+    cancel-url: ${EHR_BILLING_CANCEL_URL:http://localhost:4200/marketplace}
+    stripe:
+      secret-key: ${STRIPE_SECRET_KEY:}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
 
 ---
 # Local development profile backed by in-memory H2. Security is OPEN here so the

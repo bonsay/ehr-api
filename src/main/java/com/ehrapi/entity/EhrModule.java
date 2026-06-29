@@ -54,6 +54,14 @@ public class EhrModule {
     @Column(name = "price_monthly_cents")
     private Integer priceMonthlyCents;
 
+    /**
+     * Identifier for this module's price in the billing provider (e.g. a Stripe
+     * Price id like {@code price_123}). Used only when {@code ehr.billing.mode=stripe};
+     * ignored by the local provider.
+     */
+    @Column(name = "billing_price_id", length = 100)
+    private String billingPriceId;
+
     public EhrModule() {}
 
     public Long getId() { return id; }
@@ -85,6 +93,9 @@ public class EhrModule {
 
     public Integer getPriceMonthlyCents() { return priceMonthlyCents; }
     public void setPriceMonthlyCents(Integer priceMonthlyCents) { this.priceMonthlyCents = priceMonthlyCents; }
+
+    public String getBillingPriceId() { return billingPriceId; }
+    public void setBillingPriceId(String billingPriceId) { this.billingPriceId = billingPriceId; }
 
     /** True for modules that require a paid entitlement (non-FREE tier). */
     public boolean isPaid() { return tier != null && tier != ModuleTier.FREE; }
