@@ -2,30 +2,34 @@ spring:
   application:
     name: ehr-api
 
-  # Default datasource targets an in-memory H2 database (same host/config as
-  # content-retrieval-api). No external database and no datasource credentials are
-  # required.
+  # The API runs entirely on an in-memory H2 database. There is no external
+  # database to provision and no datasource credentials to manage: the schema is
+  # created at startup and seeded from data.sql, and everything is discarded when
+  # the process exits.
   datasource:
     url: jdbc:h2:mem:ehrdb;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create-drop
     show-sql: true
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
         format_sql: true
-        jdbc:
-          lob:
-            non_contextual_creation: true
     defer-datasource-initialization: true
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
 
   sql:
     init:
-      mode: embedded
+      mode: always
       data-locations: classpath:data.sql
 
   # OAuth2 / OIDC resource server. Point this at your IdP (Keycloak, Entra ID,
@@ -65,7 +69,7 @@ ehr:
     #   open  - no authentication at all. LOCAL DEV ONLY.
     mode: ${EHR_SECURITY_MODE:oidc}
     # Seed demo users (admin/physician/nurse/reception) on startup. Default off;
-    # the h2 dev profile turns this on so the role model is demonstrable.
+    # the "dev" profile turns this on so the role model is demonstrable.
     seed-demo-users: ${EHR_SEED_DEMO_USERS:false}
     local:
       # HS256 signing secret for local-mode tokens. MUST be overridden (>= 32
@@ -104,30 +108,16 @@ ehr:
     enabled: ${EHR_ONBOARDING_ENABLED:true}
 
 ---
-# Local development profile backed by in-memory H2. Security is OPEN here so the
-# app runs without an IdP; never use this profile in a higher environment.
+# Development / demo profile. The datasource is already in-memory H2 above; this
+# profile only relaxes the surrounding settings so the app is usable without an
+# external IdP. Never use it in a higher environment.
+#
+# The legacy profile name "h2" is kept as an alias so existing run commands and
+# container images keep working.
 spring:
   config:
     activate:
-      on-profile: h2
-  datasource:
-    url: jdbc:h2:mem:ehrdb;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
-  sql:
-    init:
-      mode: always
+      on-profile: dev | h2
 
 ehr:
   security:

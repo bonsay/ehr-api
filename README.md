@@ -2,7 +2,9 @@
 
 Backend for the **Modular Electronic Health Record (EHR)** platform — Java 21 +
 Spring Boot 3.2, persisting to an in-memory H2 database. There is no external
-database to provision and no datasource credentials to manage.
+database to provision and no datasource credentials to manage: the schema is
+created at startup, seeded from `data.sql`, and discarded when the process
+exits.
 
 ## What makes it "modular"
 
@@ -35,27 +37,33 @@ Consent enforcement lives in `ConsentService` / `SharingService`.
 This is a Gradle project (Spring Boot Gradle plugin). Use the `bootRun` task and
 pass the active profile via `--args`.
 
-### Local (H2, no database needed)
+### Dev / demo profile (recommended)
+
+The `dev` profile keeps the in-memory database and additionally runs the API in
+**local** security mode with demo users seeded, so it is usable without an
+external identity provider:
 
 ```bash
-./gradlew bootRun --args='--spring.profiles.active=h2'
+./gradlew bootRun --args='--spring.profiles.active=dev'
 ```
 
 On **Windows / PowerShell**:
 
 ```powershell
-.\gradlew.bat bootRun --args='--spring.profiles.active=h2'
+.\gradlew.bat bootRun --args='--spring.profiles.active=dev'
 # or, avoiding quoting altogether:
-$env:SPRING_PROFILES_ACTIVE="h2"; .\gradlew.bat bootRun
+$env:SPRING_PROFILES_ACTIVE="dev"; .\gradlew.bat bootRun
 ```
 
-Seed data (`src/main/resources/data.sql`) loads automatically under H2 and
-includes two institutions, a module catalog, two patients, sample clinical data
-and one scoped consent. API on <http://localhost:8081>.
+Seed data (`src/main/resources/data.sql`) loads on every startup and includes
+two institutions, a module catalog, two patients, sample clinical data and one
+scoped consent. API on <http://localhost:8081>.
 
 - Swagger UI: <http://localhost:8081/swagger-ui.html>
 - H2 console: <http://localhost:8081/h2-console>
   (JDBC URL `jdbc:h2:mem:ehrdb`, user `sa`, empty password)
+
+The legacy profile name `h2` is kept as an alias for `dev`.
 
 ### Default profile
 
@@ -63,9 +71,11 @@ and one scoped consent. API on <http://localhost:8081>.
 ./gradlew bootRun
 ```
 
-Uses the in-memory H2 database (`jdbc:h2:mem:ehrdb`). Hibernate
-`ddl-auto` creates the schema at startup; nothing is persisted across
-restarts.
+Same in-memory database, but `ehr.security.mode` defaults to `oidc`, so
+`OAUTH_ISSUER_URI` must point at an identity provider (see
+[Authentication & authorization](#authentication--authorization)). Because the
+database is in-memory, **all data is lost when the process stops** — this
+service does not persist anything across restarts.
 
 ## API surface
 
@@ -128,7 +138,7 @@ enforced by Spring method security. The mode is selected by
 | Mode | When | Behaviour |
 |------|------|-----------|
 | `oidc` (default) | higher environments | OAuth2/OIDC resource server — JWTs validated against the external IdP's JWKS. Roles come from the token. |
-| `local` | dev / demo (set by the `h2` profile) | The API authenticates users itself (`POST /api/auth/login`) and issues its own HS256 JWTs. Self-contained — no external IdP. |
+| `local` | dev / demo (set by the `dev` profile) | The API authenticates users itself (`POST /api/auth/login`) and issues its own HS256 JWTs. Self-contained — no external IdP. |
 | `open` | pure local dev | No authentication; method security is off, so every action is permitted. |
 
 A small public allow-list (`/fhir/metadata`, `/actuator/health`, API docs, and —
@@ -160,7 +170,7 @@ UI. An administrator manages all of this through `/api/admin/*`.
 
 ### Demo users (local mode)
 
-With the `h2` profile (`ehr.security.seed-demo-users=true`) these accounts are
+With the `dev` profile (`ehr.security.seed-demo-users=true`) these accounts are
 seeded (password = `<username>123`):
 
 | Username | Password | Role | Institution |

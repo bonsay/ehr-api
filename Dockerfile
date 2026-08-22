@@ -17,7 +17,7 @@ EXPOSE 8081
 # Sandbox defaults: in-memory H2, the API as its own identity provider (local
 # mode) with demo users seeded, and local billing. Override any of these envs
 # for higher environments.
-ENV SPRING_PROFILES_ACTIVE=h2 \
+ENV SPRING_PROFILES_ACTIVE=dev \
     EHR_SECURITY_MODE=local \
     EHR_SEED_DEMO_USERS=true \
     EHR_BILLING_MODE=local
