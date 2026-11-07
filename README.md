@@ -226,9 +226,15 @@ configured claim name:
 - **AWS Cognito** — issuer `https://cognito-idp.<region>.amazonaws.com/<poolId>`;
   add a custom attribute surfaced as a token claim.
 
-## AI engineering samples
+## Related AI engineering projects
 
-[`ai-samples/`](ai-samples) holds five standalone Java 21 AI projects with their own Maven build: an MCP server, enterprise RAG with RBAC, a multi-agent coding assistant, an evaluated guardrail agent, and an LLM gateway with a semantic cache. They don't depend on the EHR API. See [`ai-samples/README.md`](ai-samples/README.md).
+Five standalone Java 21 AI projects that started here now live in their own repositories:
+
+- [mcp-sqlite-task-server](https://github.com/bonsay/mcp-sqlite-task-server): Model Context Protocol server for a SQLite task manager
+- [enterprise-rag-rbac](https://github.com/bonsay/enterprise-rag-rbac): enterprise RAG with role-based access control, guardrails and evaluation
+- [multi-agent-coding-assistant](https://github.com/bonsay/multi-agent-coding-assistant): Planner/Tester/Coder agents with a sandboxed self-repair loop
+- [evaluated-guardrail-agent](https://github.com/bonsay/evaluated-guardrail-agent): safety-first tool-using agent with CI-gated evals
+- [llm-gateway-semantic-cache](https://github.com/bonsay/llm-gateway-semantic-cache): multi-tenant LLM gateway with model routing and a semantic cache
 
 ## Package layout
 
