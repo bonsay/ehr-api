@@ -226,6 +226,10 @@ configured claim name:
 - **AWS Cognito** — issuer `https://cognito-idp.<region>.amazonaws.com/<poolId>`;
   add a custom attribute surfaced as a token claim.
 
+## AI engineering samples
+
+[`ai-samples/`](ai-samples) holds five standalone Java 21 AI projects with their own Maven build: an MCP server, enterprise RAG with RBAC, a multi-agent coding assistant, an evaluated guardrail agent, and an LLM gateway with a semantic cache. They don't depend on the EHR API. See [`ai-samples/README.md`](ai-samples/README.md).
+
 ## Package layout
 
 ```

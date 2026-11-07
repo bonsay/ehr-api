@@ -35,3 +35,8 @@ grun.log
 # OS
 .DS_Store
 Thumbs.db
+
+# AI samples (separate Maven build under ai-samples/)
+ai-samples/**/target/
+ai-samples/**/traces/
+*.db

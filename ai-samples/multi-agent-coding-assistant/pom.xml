@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.bonsay.ai</groupId>
+        <artifactId>ai-samples</artifactId>
+        <version>1.0.0</version>
+    </parent>
+    <artifactId>multi-agent-coding-assistant</artifactId>
+    <name>Autonomous Multi-Agent Coding Assistant</name>
+    <description>Planner, Coder and Tester agents orchestrated by a LangGraph-style state graph, executing code in a sandbox.</description>
+
+    <properties>
+        <main.class>com.bonsay.ai.agents.CodingAssistantApp</main.class>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.bonsay.ai</groupId>
+            <artifactId>llm-core</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>
